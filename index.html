@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>蝦蝦手遊—儲值商店</title>
+    <!-- 引入 LINE LIFF SDK -->
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        :root {
+            --bg-color: #fff9e6;
+            --card-bg: rgba(255, 255, 255, 0.90);
+            --card-border: rgba(255, 204, 0, 0.45);
+            --accent-orange: #ff7b54;
+            --line-green: #06C755;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        
+        body { 
+            background-color: var(--bg-color); 
+            background-image: 
+                radial-gradient(circle at 15% 20%, rgba(255, 230, 109, 0.4) 0%, transparent 40%),
+                radial-gradient(circle at 85% 75%, rgba(255, 182, 193, 0.35) 0%, transparent 45%),
+                radial-gradient(circle at 50% 50%, rgba(255, 250, 205, 0.6) 0%, transparent 70%);
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            background-size: cover;
+            color: var(--text-main); 
+            min-height: 100vh; 
+            padding-bottom: 100px; 
+        }
+
+        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--card-border); position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+        .nav-brand { font-size: 0.95rem; font-weight: bold; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+        
+        .brand-logo { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; box-shadow: 0 2px 6px rgba(0,0,0,0.12); border: 1px solid rgba(255,123,84,0.3); transition: transform 0.2s ease; }
+        .brand-logo:hover { transform: scale(1.08); }
+
+        .my-orders-btn { background: linear-gradient(135deg, #fff5f2, #ffebe5); color: var(--accent-orange); border: 1px solid var(--accent-orange); padding: 5px 12px; border-radius: 20px; font-size: 0.78rem; font-weight: bold; cursor: pointer; transition: all 0.25s; margin-left: 4px; box-shadow: 0 2px 4px rgba(255,123,84,0.1); }
+        .my-orders-btn:hover { background: var(--accent-orange); color: white; transform: translateY(-1px); box-shadow: 0 4px 8px rgba(255,123,84,0.25); }
+
+        .user-profile-wrapper { display: flex; align-items: center; gap: 8px; background: rgba(255, 255, 255, 0.85); padding: 4px 10px 4px 4px; border-radius: 30px; border: 1px solid var(--card-border); }
+        .user-profile { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--line-green); object-fit: cover; background: #e2e8f0; }
+        .user-name { font-size: 0.8rem; color: var(--text-main); font-weight: 600; max-width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .logout-btn { background: #fee2e2; color: #ef4444; border: 1px solid #fecaca; padding: 4px 8px; border-radius: 15px; font-size: 0.7rem; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+        .logout-btn:hover { background: #ef4444; color: white; }
+        
+        .step-container { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255, 255, 255, 0.88); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: 1px solid var(--card-border); max-width: 600px; margin: 0 auto; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+        .step-item { text-align: center; flex: 1; position: relative; }
+        .step-circle { width: 26px; height: 26px; border-radius: 50%; background: #e2e8f0; color: var(--text-muted); font-size: 0.75rem; font-weight: bold; display: flex; align-items: center; justify-content: center; margin: 0 auto 3px; border: 1px solid var(--card-border); transition: all 0.3s; }
+        .step-item.active .step-circle { background: var(--accent-orange); color: white; box-shadow: 0 0 10px rgba(255, 123, 84, 0.4); }
+        .step-item.completed .step-circle { background: #10b981; color: white; }
+        .step-text { font-size: 0.7rem; color: var(--text-muted); }
+        .step-item.active .step-text { color: var(--text-main); font-weight: bold; }
+
+        .container { max-width: 700px; margin: 0 auto; padding: 20px; }
+        .search-bar { margin-bottom: 25px; }
+        .search-bar input { width: 100%; padding: 14px 20px; border-radius: 30px; border: 1px solid var(--card-border); background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(5px); color: var(--text-main); font-size: 1rem; outline: none; transition: border-color 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+        .search-bar input:focus { border-color: var(--accent-orange); }
+        
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+        
+        .game-card-icon { 
+            background: var(--card-bg); 
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border: 1px solid var(--card-border); 
+            border-radius: 18px; 
+            padding: 16px 10px; 
+            text-align: center; 
+            cursor: pointer; 
+            transition: all 0.25s ease; 
+            box-shadow: 0 6px 16px rgba(0,0,0,0.04); 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+        .game-card-icon:hover { transform: translateY(-4px); border-color: var(--accent-orange); box-shadow: 0 10px 24px rgba(255, 123, 84, 0.2); background: rgba(255, 255, 255, 0.98); }
+        .game-avatar { width: 72px; height: 72px; border-radius: 18px; object-fit: cover; margin: 0 auto 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
+        .game-title { font-size: 0.95rem; font-weight: bold; color: var(--text-main); margin-bottom: 2px; }
+        .game-sub { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px; }
+        
+        .price-btn { background: #fff5f2; color: var(--accent-orange); border: 1px solid rgba(255, 123, 84, 0.4); padding: 4px 10px; border-radius: 12px; font-size: 0.72rem; font-weight: bold; transition: all 0.2s ease; margin-top: auto; }
+        .game-card-icon:hover .price-btn { background: var(--accent-orange); color: white; }
+
+        .page-section { display: none; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px); border: 1px solid var(--card-border); padding: 24px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); margin-top: 10px; }
+        .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--card-border); }
+        .back-store-btn { display: flex; align-items: center; gap: 6px; background: #f1f5f9; color: var(--text-main); border: 1px solid var(--card-border); padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
+        .back-store-btn:hover { background: #e2e8f0; border-color: var(--accent-orange); }
+        .page-header h2 { color: var(--accent-orange); font-size: 1.25rem; font-weight: 700; }
+
+        .plan-list-container { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+        .plan-row { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border: 2px solid var(--card-border); padding: 16px 20px; border-radius: 14px; transition: all 0.2s ease; cursor: pointer; }
+        .plan-row:hover { border-color: var(--accent-orange); background: #fff5f2; box-shadow: 0 4px 12px rgba(255,123,84,0.15); }
+        
+        .plan-row-info { display: flex; align-items: center; gap: 12px; flex: 1; }
+        .plan-row-img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-orange); background: #fff; }
+        .plan-row-name { font-size: 1.05rem; color: var(--text-main); font-weight: bold; }
+        .plan-row-price { font-size: 0.95rem; color: var(--accent-orange); font-weight: 700; margin-top: 2px; }
+
+        .qty-control { display: flex; align-items: center; gap: 8px; background: #ffffff; border: 1px solid var(--card-border); padding: 4px 8px; border-radius: 10px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+        .qty-btn { width: 28px; height: 28px; border-radius: 8px; background: #f1f5f9; border: 1px solid var(--card-border); color: var(--text-main); font-weight: bold; font-size: 1rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; }
+        .qty-btn:hover { background: var(--accent-orange); color: white; border-color: var(--accent-orange); }
+        .qty-input { width: 36px; text-align: center; font-size: 0.95rem; font-weight: bold; border: none; background: transparent; color: var(--text-main); outline: none; }
+
+        .checkout-bar { display: flex; justify-content: space-between; align-items: center; background: #fff; border: 2px solid var(--card-border); padding: 14px 18px; border-radius: 14px; margin-top: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .total-price-text { font-size: 1rem; font-weight: bold; color: var(--text-main); }
+        .total-price-text span { color: var(--accent-orange); font-size: 1.25rem; font-weight: 800; }
+        
+        .action-btns-group { display: flex; gap: 10px; }
+        .btn-back-page { background: #f1f5f9; color: var(--text-muted); border: 1px solid var(--card-border); padding: 10px 16px; border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-back-page:hover { background: #e2e8f0; color: var(--text-main); }
+        
+        .btn-next-page { background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 10px 20px; border-radius: 10px; font-size: 0.95rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); transition: transform 0.15s; }
+        .btn-next-page:active { transform: scale(0.98); }
+
+        .notice-card { background: #fef2f2; border: 1px solid #fee2e2; border-left: 3px solid #ef4444; border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; }
+        .notice-card-header { color: #dc2626; font-weight: 700; font-size: 0.85rem; margin-bottom: 4px; }
+        .notice-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+        .notice-list li { color: #b91c1c; font-size: 0.8rem; line-height: 1.4; display: flex; align-items: flex-start; gap: 4px; }
+        .notice-list li::before { content: "•"; color: #ef4444; font-weight: bold; }
+
+        .form-group { margin-bottom: 14px; text-align: left; }
+        .form-group label { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; font-size: 0.85rem; color: var(--text-main); font-weight: 600; }
+        .required-star { color: #ef4444; }
+        .form-group select, .form-group input { width: 100%; padding: 11px 14px; border-radius: 10px; border: 1px solid var(--card-border); background: #f8fafc; color: var(--text-main); font-size: 0.95rem; outline: none; transition: all 0.2s ease; }
+        .form-group input::placeholder { color: #94a3b8; font-size: 0.85rem; }
+        .form-group select:focus, .form-group input:focus { border-color: var(--accent-orange); background: #ffffff; box-shadow: 0 0 0 2px rgba(255, 123, 84, 0.15); }
+
+        .payment-option { background: #f8fafc; border: 1px solid var(--card-border); padding: 14px 16px; border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; cursor: pointer; transition: all 0.2s ease; }
+        .payment-option:hover { border-color: var(--accent-orange); background: #fff5f2; }
+        .payment-option input[type="radio"] { width: 18px; height: 18px; margin-right: 12px; accent-color: var(--accent-orange); cursor: pointer; }
+        .payment-info-box { background: #ecfdf5; border: 1px dashed #6ee7b7; color: #047857; padding: 12px 14px; border-radius: 10px; font-size: 0.88rem; margin-bottom: 16px; line-height: 1.4; }
+
+        .success-box { text-align: center; padding: 20px 0; }
+        .success-icon { font-size: 3.5rem; color: #10b981; margin-bottom: 12px; }
+        .order-id-tag { background: #f1f5f9; padding: 10px; border-radius: 8px; font-family: monospace; color: var(--accent-orange); margin: 12px 0; font-size: 1.1rem; border: 1px solid var(--card-border); }
+
+        .order-item-card { background: #f8fafc; border: 1px solid var(--card-border); padding: 12px; border-radius: 10px; margin-bottom: 10px; text-align: left; }
+        .order-item-header { display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; color: var(--accent-orange); }
+        .order-item-body { font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(4px); }
+        .modal-content { background: #ffffff; border: 1px solid var(--card-border); padding: 20px; border-radius: 20px; width: 92%; max-width: 440px; position: relative; max-height: 92vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,0.15); }
+        .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--card-border); }
+        .close-btn { font-size: 1.3rem; color: var(--text-muted); cursor: pointer; transition: color 0.2s; line-height: 1; }
+        .close-btn:hover { color: var(--text-main); }
+        .modal-content h2 { color: var(--accent-orange); font-size: 1.15rem; font-weight: 700; }
+
+        /* 右下角 LINE 官方客服圖示樣式 */
+        .floating-line-btn { position: fixed; bottom: 20px; right: 20px; width: 56px; height: 56px; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 16px rgba(6, 199, 85, 0.35); z-index: 99; transition: transform 0.2s ease; display: flex; align-items: center; justify-content: center; background: #ffffff; }
+        .floating-line-btn img { width: 100%; height: 100%; object-fit: cover; }
+        .floating-line-btn:hover { transform: scale(1.1); }
+
+        footer { text-align: center; padding: 30px 20px; color: var(--text-muted); font-size: 0.8rem; border-top: 1px solid var(--card-border); margin-top: 40px; background: rgba(255,255,255,0.85); backdrop-filter: blur(5px); }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <div class="nav-brand">
+            <img src="S__576299010.jpg" class="brand-logo" alt="蝦蝦手遊儲值商店LOGO" onerror="this.src='https://via.placeholder.com/38'">
+            <span>蝦蝦手遊儲值商店</span>
+            <button type="button" class="my-orders-btn" onclick="openMyOrdersModal()">我的訂單</button>
+        </div>
+        <div class="user-profile-wrapper">
+            <img id="userAvatar" src="https://via.placeholder.com/32" class="user-profile" alt="LINE頭像">
+            <span id="userName" class="user-name">LINE 會員</span>
+            <button type="button" class="logout-btn" onclick="logoutLiff()" title="切換帳號">登出</button>
+        </div>
+    </div>
+
+    <div class="step-container">
+        <div class="step-item active" id="step1-indicator"><div class="step-circle">1</div><div class="step-text">選遊戲</div></div>
+        <div class="step-item" id="step2-indicator"><div class="step-circle">2</div><div class="step-text">選商品</div></div>
+        <div class="step-item" id="step3-indicator"><div class="step-circle">3</div><div class="step-text">填資料</div></div>
+        <div class="step-item" id="step4-indicator"><div class="step-circle">4</div><div class="step-text">付 款</div></div>
+    </div>
+
+    <div class="container">
+        <!-- 畫面一：遊戲列表 -->
+        <div id="viewGames">
+            <div class="search-bar"><input type="text" id="searchInput" placeholder="搜尋儲值遊戲或服務..."></div>
+            <div class="grid" id="gameGrid">
+                <!-- 寶可夢 -->
+                <div class="game-card-icon" onclick="openProductStep('寶可夢')">
+                    <img src="pokemon.webp" class="game-avatar" alt="寶可夢" onerror="this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=200&q=80'">
+                    <div class="game-title">寶可夢</div>
+                    <div class="game-sub">提供帳密儲值</div>
+                    <button type="button" class="price-btn">查看價格</button>
+                </div>
+                <!-- 皮克敏 -->
+                <div class="game-card-icon" onclick="openProductStep('皮克敏')">
+                    <img src="pikmin.webp" class="game-avatar" alt="皮克敏" onerror="this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=200&q=80'">
+                    <div class="game-title">皮克敏</div>
+                    <div class="game-sub">提供帳密儲值</div>
+                    <button type="button" class="price-btn">查看價格</button>
+                </div>
+                <!-- 寶可夢大集結 -->
+                <div class="game-card-icon" onclick="openProductStep('寶可夢大集結')">
+                    <img src="pokemon_unite.webp" class="game-avatar" alt="寶可夢大集結" onerror="this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=200&q=80'">
+                    <div class="game-title">寶可夢大集結</div>
+                    <div class="game-sub">提供帳密儲值</div>
+                    <button type="button" class="price-btn">查看價格</button>
+                </div>
+                <!-- 特戰英豪 -->
+                <div class="game-card-icon" onclick="openProductStep('特戰英豪')">
+                    <img src="valorant.webp" class="game-avatar" alt="特戰英豪" onerror="this.src='https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=200&q=80'">
+                    <div class="game-title">特戰英豪</div>
+                    <div class="game-sub">提供RIOT帳密儲值</div>
+                    <button type="button" class="price-btn">查看價格</button>
+                </div>
+                <!-- 三角洲 -->
+                <div class="game-card-icon" onclick="openProductStep('三角洲')">
+                    <img src="delta_force.webp" class="game-avatar" alt="三角洲" onerror="this.src='https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&w=200&q=80'">
+                    <div class="game-title">三角洲</div>
+                    <div class="game-sub">提供帳密儲值</div>
+                    <button type="button" class="price-btn">查看價格</button>
+                </div>
+                <!-- 決勝時刻 -->
+                <div class="game-card-icon" onclick="openProductStep('決勝時刻')">
+                    <img src="codm.webp" class="game-avatar" alt="決勝時刻" onerror="this.src='https://images.unsplash.com/photo-1538481199705-c710c4e965fc?auto=format&fit=crop&w=200&q=80'">
+                    <div class="game-title">決勝時刻</div>
+                    <div class="game-sub">提供帳密儲值</div>
+                    <button type="button" class="price-btn">查看價格</button>
+                </div>
+                <!-- PUBG -->
+                <div class="game-card-icon" onclick="openProductStep('PUBG')">
+                    <img src="pubgmobile.webp" class="game-avatar" alt="PUBG" onerror="this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=200&q=80'">
+                    <div class="game-title">PUBG</div>
+                    <div class="game-sub">提供帳密儲值</div>
+                    <button type="button" class="price-btn">查看價格</button>
+                </div>
+                <!-- 第五人格 -->
+                <div class="game-card-icon" onclick="openProductStep('第五人格')">
+                    <img src="identityv.webp" class="game-avatar" alt="第五人格" onerror="this.src='https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=200&q=80'">
+                    <div class="game-title">第五人格</div>
+                    <div class="game-sub">UID免帳密快儲</div>
+                    <button type="button" class="price-btn">查看價格</button>
+                </div>
+                <!-- 蛋仔派對 -->
+                <div class="game-card-icon" onclick="openProductStep('蛋仔派對')">
+                    <img src="eggyparty.webp" class="game-avatar" alt="蛋仔派對" onerror="this.src='https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=200&q=80'">
+                    <div class="game-title">蛋仔派對</div>
+                    <div class="game-sub">UID免帳密快儲</div>
+                    <button type="button" class="price-btn">查看價格</button>
+                </div>
+                <!-- 傳說對決 -->
+                <div class="game-card-icon" onclick="openProductStep('傳說對決')">
+                    <img src="rov.webp" class="game-avatar" alt="傳說對決" onerror="this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=200&q=80'">
+                    <div class="game-title">傳說對決</div>
+                    <div class="game-sub">提供帳密儲值</div>
+                    <button type="button" class="price-btn">查看價格</button>
+                </div>
+                <!-- Discord -->
+                <div class="game-card-icon" onclick="openProductStep('Discord')">
+                    <img src="discord.webp" class="game-avatar" alt="Discord" onerror="this.src='https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=200&q=80'">
+                    <div class="game-title">Discord</div>
+                    <div class="game-sub">提供帳密儲值</div>
+                    <button type="button" class="price-btn">查看價格</button>
+                </div>
+                <!-- TikTok -->
+                <div class="game-card-icon" onclick="openProductStep('TikTok')">
+                    <img src="tiktok.webp" class="game-avatar" alt="TikTok" onerror="this.src='https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=200&q=80'">
+                    <div class="game-title">TikTok</div>
+                    <div class="game-sub">提供帳密儲值</div>
+                    <button type="button" class="price-btn">查看價格</button>
+                </div>
+                <!-- 原神 -->
+                <div class="game-card-icon" onclick="openProductStep('原神')">
+                    <img src="genshin.webp" class="game-avatar" alt="原神" onerror="this.src='https://images.unsplash.com/photo-1538481199705-c710c4e965fc?auto=format&fit=crop&w=200&q=80'">
+                    <div class="game-title">原神</div>
+                    <div class="game-sub">提供米哈遊帳密儲值</div>
+                    <button type="button" class="price-btn">查看價格</button>
+                </div>
+                <!-- 崩壞：星穹鐵道 -->
+                <div class="game-card-icon" onclick="openProductStep('崩壞：星穹鐵道')">
+                    <img src="starrail.webp" class="game-avatar" alt="崩壞：星穹鐵道" onerror="this.src='https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=200&q=80'">
+                    <div class="game-title">崩壞：星穹鐵道</div>
+                    <div class="game-sub">提供米哈遊帳密儲值</div>
+                    <button type="button" class="price-btn">查看價格</button>
+                </div>
+                <!-- 絕區零 -->
+                <div class="game-card-icon" onclick="openProductStep('絕區零')">
+                    <img src="zenless.webp" class="game-avatar" alt="絕區零" onerror="this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=200&q=80'">
+                    <div class="game-title">絕區零</div>
+                    <div class="game-sub">提供米哈遊帳密儲值</div>
+                    <button type="button" class="price-btn">查看價格</button>
+                </div>
+                <!-- 心動小鎮 -->
+                <div class="game-card-icon" onclick="openProductStep('心動小鎮')">
+                    <img src="heart_town.webp" class="game-avatar" alt="心動小鎮" onerror="this.src='https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=200&q=80'">
+                    <div class="game-title">心動小鎮</div>
+                    <div class="game-sub">提供帳密儲值</div>
+                    <button type="button" class="price-btn">查看價格</button>
+                </div>
+                <!-- 極速領域 -->
+                <div class="game-card-icon" onclick="openProductStep('極速領域')">
+                    <img src="speedmobile.webp" class="game-avatar" alt="極速領域" onerror="this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=200&q=80'">
+                    <div class="game-title">極速領域</div>
+                    <div class="game-sub">UID免帳密快儲</div>
+                    <button type="button" class="price-btn">查看價格</button>
+                </div>
+                <!-- 我要活下去 -->
+                <div class="game-card-icon" onclick="openProductStep('我要活下去')">
+                    <img src="freefire.webp" class="game-avatar" alt="我要活下去" onerror="this.src='https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=200&q=80'">
+                    <div class="game-title">我要活下去</div>
+                    <div class="game-sub">UID免帳密快儲</div>
+                    <button type="button" class="price-btn">查看價格</button>
+                </div>
+                <!-- 荒野亂鬥 -->
+                <div class="game-card-icon" onclick="openProductStep('荒野亂鬥')">
+                    <img src="brawlstars.webp" class="game-avatar" alt="荒野亂鬥" onerror="this.src='https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&w=200&q=80'">
+                    <div class="game-title">荒野亂鬥</div>
+                    <div class="game-sub">提供帳密儲值</div>
+                    <button type="button" class="price-btn">查看價格</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 畫面二：商品（價位）選擇獨立頁面 -->
+        <div id="viewProducts" class="page-section">
+            <div class="page-header">
+                <button type="button" class="back-store-btn" onclick="backToGames()">‹ 返回遊戲列表</button>
+                <h2 id="pageGameTitle">選擇商品</h2>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">請點擊商品列直接增加數量（可複選多項）：</p>
+            
+            <div class="plan-list-container" id="planListContainer"></div>
+
+            <!-- 底部結帳列：總金額 + 返回鍵 + 下一步鍵 -->
+            <div class="checkout-bar">
+                <div class="total-price-text">總計：<span id="totalPriceDisplay">$0</span> 元</div>
+                <div class="action-btns-group">
+                    <button type="button" class="btn-back-page" onclick="backToGames()">返回</button>
+                    <button type="button" class="btn-next-page" onclick="goToAccountStep()">下一步</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 畫面三：填寫儲值資料獨立頁面 -->
+        <div id="viewAccount" class="page-section">
+            <div class="page-header">
+                <button type="button" class="back-store-btn" onclick="backToProductStep()">‹ 返回選擇商品</button>
+                <h2 id="pageAccountTitle">填寫儲值資料</h2>
+            </div>
+
+            <form id="accountForm" onsubmit="goToPaymentStep(event)">
+                <div class="notice-card" id="noticeCardBox">
+                    <div class="notice-card-header" id="noticeHeaderTitle">注意事項</div>
+                    <ul class="notice-list" id="noticeListContent">
+                        <li>因帳密填寫錯誤導致之儲值問題，須自行負責。</li>
+                        <li>填寫完資料後請關閉遊戲，若強行登入導致少東西請自負。</li>
+                    </ul>
+                </div>
+
+                <div class="form-group" id="serverGroup">
+                    <label>伺服器 <span class="required-star">*</span></label>
+                    <input type="text" id="gameServer" placeholder="例如：台港澳服 / 亞服 / 預設" required>
+                </div>
+
+                <div class="form-group" id="loginGroup">
+                    <label>登入方式 <span class="required-star">*</span></label>
+                    <select id="loginMethodSelect" onchange="toggleCustomLoginInput(this.value)"></select>
+                </div>
+
+                <div class="form-group" id="customLoginGroup" style="display: none;">
+                    <input type="text" id="customLoginInput" placeholder="請填寫您的登入方式">
+                </div>
+
+                <div class="form-group" id="accountGroupLabel">
+                    <label id="accountLabelText">遊戲帳號 <span class="required-star">*</span></label>
+                    <input type="text" id="gameAccount" placeholder="請輸入遊戲帳號或綁定信箱" required>
+                </div>
+                
+                <div class="form-group" id="passwordGroup">
+                    <label>遊戲密碼 / 驗證碼 <span class="required-star">*</span></label>
+                    <input type="password" id="gamePassword" placeholder="請輸入遊戲密碼或驗證碼" required>
+                </div>
+
+                <div class="form-group" id="nicknameGroup">
+                    <label>玩家暱稱 <span class="required-star">*</span></label>
+                    <input type="text" id="playerNickname" placeholder="請輸入遊戲內玩家暱稱" required>
+                </div>
+
+                <div class="form-group" id="backupGroup">
+                    <label>臉書復原碼 / 谷歌備用碼</label>
+                    <input type="text" id="backupCode" placeholder="若有開啟雙重驗證請提供 3 組">
+                </div>
+
+                <!-- 填寫資料底部的總金額與導覽按鈕列 -->
+                <div class="checkout-bar" style="margin-top: 24px;">
+                    <div class="total-price-text">總計：<span id="accountTotalPriceDisplay">$0</span> 元</div>
+                    <div class="action-btns-group">
+                        <button type="button" class="btn-back-page" onclick="backToProductStep()">上一步</button>
+                        <button type="submit" class="btn-next-page">下一步</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- 畫面四：付款與成功結帳獨立頁面 -->
+        <div id="viewPayment" class="page-section">
+            <div class="page-header">
+                <button type="button" class="back-store-btn" onclick="backToAccountStepFromPayment()">‹ 返回修改資料</button>
+                <h2>選擇付款方式</h2>
+            </div>
+
+            <div style="background: #f1f5f9; border: 1px solid var(--card-border); padding: 12px 16px; border-radius: 12px; margin-bottom: 16px; font-size: 0.9rem;">
+                <p style="color: var(--text-muted);">選擇商品：<span id="summaryPlan" style="color: var(--text-main); font-weight: bold;"></span></p>
+                <p style="color: var(--text-muted); margin-top: 4px;">總計：<span id="summaryPrice" style="color: var(--accent-orange); font-weight: bold;"></span> 元</p>
+            </div>
+
+            <div class="form-group">
+                <label>請選擇繳費方式 <span class="required-star">*</span></label>
+                <label class="payment-option">
+                    <input type="radio" name="paymentMethod" value="匯款" checked onchange="updatePaymentNotice()">
+                    <span>匯款 (銀行轉帳)</span>
+                </label>
+                <label class="payment-option">
+                    <input type="radio" name="paymentMethod" value="無卡存款" onchange="updatePaymentNotice()">
+                    <span>無卡存款</span>
+                </label>
+                <label class="payment-option">
+                    <input type="radio" name="paymentMethod" value="7-11櫃台條碼繳費" onchange="updatePaymentNotice()">
+                    <span>7-11櫃台條碼繳費 (手續費+25)</span>
+                </label>
+                <label class="payment-option">
+                    <input type="radio" name="paymentMethod" value="全家櫃台條碼繳費" onchange="updatePaymentNotice()">
+                    <span>全家櫃台條碼繳費 (手續費+25)</span>
+                </label>
+            </div>
+
+            <div class="payment-info-box" id="paymentNotice">
+                繳費管道:匯款。請加入LINE聯繫客服提供。
+            </div>
+
+            <!-- 付款頁面底部的總金額與導覽按鈕列 -->
+            <div class="checkout-bar" style="margin-top: 24px;">
+                <div class="total-price-text">總計：<span id="paymentTotalPriceDisplay">$0</span> 元</div>
+                <div class="action-btns-group">
+                    <button type="button" class="btn-back-page" onclick="backToAccountStepFromPayment()">上一步</button>
+                    <button type="button" class="btn-next-page" style="background: linear-gradient(135deg, #10b981, #059669);" onclick="submitFinalPayment()">送出訂單卡片</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 成功送出畫面 -->
+        <div id="viewSuccess" class="page-section success-box">
+            <div class="success-icon">✓</div>
+            <h3 style="color: var(--text-main); margin-bottom: 8px; font-size: 1.3rem;">訂單已成功送出！</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 12px;">系統已自動發送精美訂單卡片至您的 LINE！</p>
+            <div class="order-id-tag" id="displayOrderId">#10000</div>
+            
+            <!-- 成功畫面底部的按鈕列 -->
+            <div class="checkout-bar" style="margin-top: 24px;">
+                <div class="action-btns-group" style="width: 100%; display: flex; gap: 10px;">
+                    <button type="button" class="btn-back-page" style="flex: 1;" onclick="backToGames()">返回首頁</button>
+                    <button type="button" class="btn-next-page" style="flex: 1; background: linear-gradient(135deg, #10b981, #059669);" onclick="openLineChat()">前往 LINE 官方客服</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 彈跳視窗：我的歷史訂單 -->
+    <div class="modal" id="orderModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>我的歷史訂單</h2>
+                <span class="close-btn" onclick="closeMyOrdersModal()" title="關閉">&times;</span>
+            </div>
+            <div id="ordersListContainer" style="max-height: 260px; overflow-y: auto; margin-bottom: 12px;"></div>
+            <button type="button" class="btn-secondary" onclick="closeMyOrdersModal()">關閉視窗</button>
+        </div>
+    </div>
+
+    <!-- 右下角 LINE 官方客服圖示按鈕 -->
+    <a href="https://line.me/R/oaMessage/@189jtpve/" target="_blank" class="floating-line-btn" title="官方客服">
+        <img src="200x200bb-75.webp" alt="官方客服LINE" onerror="this.src='https://via.placeholder.com/56?text=LINE'">
+    </a>
+
+    <footer>
+        <p>&copy; 2026 蝦蝦手遊儲值商店 版權所有 ｜ 官方客服: @189jtpve</p>
+    </footer>
+
+    <script>
+        let currentGameName = "";
+        let currentPlansList = [];
+        let currentLoginOptions = [];
+        let generatedOrderText = "";
+        let userLineId = ""; // 儲存當前客人的 LINE ID
+
+        window.onload = function() {
+            if (typeof liff !== 'undefined') {
+                liff.init({ 
+                    liffId: "2011979868-J8m5pq0V",
+                    withLoginOnExternalBrowser: true 
+                }).then(() => {
+                    if (liff.isLoggedIn()) {
+                        liff.getProfile().then(profile => {
+                            document.getElementById('userName').innerText = profile.displayName;
+                            document.getElementById('userAvatar').src = profile.pictureUrl;
+                            userLineId = profile.userId; // 抓取客人的 LINE ID
+                        }).catch(err => console.log('取得 LINE 個人檔案失敗', err));
+                    } else {
+                        liff.login();
+                    }
+                }).catch(err => {
+                    console.log('LIFF 初始化失敗', err);
+                });
+            }
+        };
+
+        function logoutLiff() {
+            if (typeof liff !== 'undefined' && liff.isLoggedIn()) {
+                liff.logout();
+                window.location.reload();
+            } else {
+                window.location.reload();
+            }
+        }
+
+        function showView(viewId) {
+            document.getElementById('viewGames').style.display = 'none';
+            document.getElementById('viewProducts').style.display = 'none';
+            document.getElementById('viewAccount').style.display = 'none';
+            document.getElementById('viewPayment').style.display = 'none';
+            document.getElementById('viewSuccess').style.display = 'none';
+            
+            document.getElementById(viewId).style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function openProductStep(gameName) {
+            currentGameName = gameName;
+            document.getElementById('pageGameTitle').innerText = gameName + " - 選擇商品";
+
+            const planListContainer = document.getElementById('planListContainer');
+            planListContainer.innerHTML = '';
+
+            let plans = [];
+            let loginOptions = [];
+
+            if (gameName === '寶可夢') {
+                loginOptions = ['谷歌', '寶可夢訓練家中央站', '臉書'];
+                plans = [
+                    { name: "1,200 皮幣", price: "200", img: "皮幣_2.webp" },
+                    { name: "2,800 皮幣", price: "350", img: "皮幣_2.webp" },
+                    { name: "5,700 皮幣", price: "600", img: "皮幣_2.webp" },
+                    { name: "15,500 皮幣", price: "1150", img: "皮幣_2.webp" },
+                    { name: "17,000 皮幣", price: "1300", img: "皮幣_2.webp" },
+                    { name: "34,000 皮幣", price: "2500", img: "皮幣_2.webp" }
+                ];
+            } else if (gameName === '皮克敏') {
+                loginOptions = ['谷歌', '臉書', '任天堂'];
+                plans = [
+                    { name: "550 金幣", price: "100", img: "pikmin.webp" },
+                    { name: "1200 金幣", price: "200", img: "pikmin.webp" },
+                    { name: "2500 金幣", price: "400", img: "pikmin.webp" },
+                    { name: "5000 金幣", price: "750", img: "pikmin.webp" },
+                    { name: "12500 金幣", price: "1600", img: "pikmin.webp" },
+                    { name: "25000 金幣", price: "3200", img: "pikmin.webp" }
+                ];
+            } else if (gameName === '寶可夢大集結') {
+                loginOptions = ['FB', 'Google', '任天堂', '訓練家'];
+                plans = [
+                    { name: "245 寶石", price: "100", img: "pokemon_unite.webp" },
+                    { name: "490 寶石", price: "200", img: "pokemon_unite.webp" },
+                    { name: "1220 寶石", price: "500", img: "pokemon_unite.webp" },
+                    { name: "2450 寶石", price: "750", img: "pokemon_unite.webp" },
+                    { name: "3050 寶石", price: "900", img: "pokemon_unite.webp" },
+                    { name: "6000 寶石", price: "1580", img: "pokemon_unite.webp" }
+                ];
+            } else if (gameName === '特戰英豪') {
+                loginOptions = ['拳頭帳號', '谷歌', '臉書'];
+                plans = [
+                    { name: "1000 點數", price: "300", img: "valorant.webp" },
+                    { name: "2050 點數", price: "600", img: "valorant.webp" },
+                    { name: "3650 點數", price: "1000", img: "valorant.webp" },
+                    { name: "5350 點數", price: "1400", img: "valorant.webp" },
+                    { name: "7400 點數", price: "1880", img: "valorant.webp" },
+                    { name: "9000 點數", price: "2280", img: "valorant.webp" },
+                    { name: "11000 點數", price: "2580", img: "valorant.webp" },
+                    { name: "13050 點數", price: "3150", img: "valorant.webp" },
+                    { name: "16350 點數", price: "3900", img: "valorant.webp" },
+                    { name: "22000 點數", price: "5100", img: "valorant.webp" }
+                ];
+            } else if (gameName === '三角洲') {
+                loginOptions = ['谷歌', '臉書', '競舞'];
+                plans = [
+                    { name: "320 三角幣", price: "170", img: "delta_force.webp" },
+                    { name: "750 三角幣", price: "300", img: "delta_force.webp" },
+                    { name: "1480 三角幣", price: "600", img: "delta_force.webp" },
+                    { name: "3950 三角幣", price: "1480", img: "delta_force.webp" },
+                    { name: "8100 三角幣", price: "2750", img: "delta_force.webp" },
+                    { name: "16200 三角幣", price: "5450", img: "delta_force.webp" }
+                ];
+            } else if (gameName === '決勝時刻') {
+                loginOptions = ['競舞', '臉書', '通訊軟體'];
+                plans = [
+                    { name: "420 點數", price: "170", img: "codm.webp" },
+                    { name: "880 點數", price: "300", img: "codm.webp" },
+                    { name: "2400 點數", price: "750", img: "codm.webp" },
+                    { name: "5000 點數", price: "1480", img: "codm.webp" },
+                    { name: "10800 點數", price: "2750", img: "codm.webp" },
+                    { name: "21600 點數", price: "5450", img: "codm.webp" }
+                ];
+            } else if (gameName === 'PUBG') {
+                loginOptions = ['掃條碼即可登入', '臉書', '推特', '谷歌'];
+                plans = [
+                    { name: "325 點數", price: "170", img: "pubgmobile.webp" },
+                    { name: "660 點數", price: "300", img: "pubgmobile.webp" },
+                    { name: "1800 點數", price: "750", img: "pubgmobile.webp" },
+                    { name: "3850 點數", price: "1480", img: "pubgmobile.webp" },
+                    { name: "8100 點數", price: "2750", img: "pubgmobile.webp" },
+                    { name: "16200 點數", price: "5450", img: "pubgmobile.webp" }
+                ];
+            } else if (gameName === '第五人格') {
+                plans = [
+                    { name: "1518 迴聲", price: "600", img: "identityv.webp" },
+                    { name: "2277 迴聲", price: "850", img: "identityv.webp" },
+                    { name: "3795 迴聲", price: "1400", img: "identityv.webp" },
+                    { name: "5313 迴聲", price: "1900", img: "identityv.webp" },
+                    { name: "7590 迴聲", price: "2680", img: "identityv.webp" },
+                    { name: "15180 迴聲", price: "5350", img: "identityv.webp" }
+                ];
+            } else if (gameName === '蛋仔派對') {
+                plans = [
+                    { name: "757 蛋幣", price: "300", img: "eggyparty.webp" },
+                    { name: "1524 蛋幣", price: "600", img: "eggyparty.webp" },
+                    { name: "2296 蛋幣", price: "850", img: "eggyparty.webp" },
+                    { name: "3873 蛋幣", price: "1350", img: "eggyparty.webp" },
+                    { name: "7783 蛋幣", price: "2600", img: "eggyparty.webp" },
+                    { name: "9307 蛋幣", price: "3200", img: "eggyparty.webp" }
+                ];
+            } else if (gameName === '傳說對決') {
+                loginOptions = ['競舞', '臉書', '蘋果', '通訊軟體'];
+                plans = [
+                    { name: "1092 點券", price: "750", img: "rov.webp" },
+                    { name: "1466 點券", price: "990", img: "rov.webp" },
+                    { name: "2250 點券", price: "1460", img: "rov.webp" },
+                    { name: "2978 點券", price: "1950", img: "rov.webp" },
+                    { name: "3716 點券", price: "2450", img: "rov.webp" },
+                    { name: "4152 點券", price: "2700", img: "rov.webp" },
+                    { name: "4543 點券", price: "2950", img: "rov.webp" },
+                    { name: "7330 點券", price: "4900", img: "rov.webp" }
+                ];
+            } else if (gameName === 'Discord') {
+                loginOptions = ['帳號密碼登入', '信箱登入'];
+                plans = [
+                    { name: "1230 價位", price: "430", img: "discord.webp" },
+                    { name: "1040 價位", price: "360", img: "discord.webp" },
+                    { name: "770 價位", price: "300", img: "discord.webp" },
+                    { name: "590 價位", price: "250", img: "discord.webp" },
+                    { name: "475 價位", price: "200", img: "discord.webp" },
+                    { name: "299 價位", price: "150", img: "discord.webp" },
+                    { name: "高級訂閱一個月", price: "250", img: "discord.webp" },
+                    { name: "高級訂閱一年", price: "1400", img: "discord.webp" }
+                ];
+            } else if (gameName === 'TikTok') {
+                loginOptions = ['電話號碼', '電子郵件/使用者名稱', '臉書', '谷歌'];
+                plans = [
+                    { name: "700金幣", price: "300", img: "tiktok.webp" },
+                    { name: "1400金幣", price: "580", img: "tiktok.webp" },
+                    { name: "2100金幣", price: "850", img: "tiktok.webp" },
+                    { name: "3500金幣", price: "1350", img: "tiktok.webp" },
+                    { name: "7000金幣", price: "2550", img: "tiktok.webp" },
+                    { name: "14000金幣", price: "5100", img: "tiktok.webp" }
+                ];
+            } else if (gameName === '原神') {
+                loginOptions = ['限定米哈遊登入'];
+                plans = [
+                    { name: "330 創世結晶", price: "170", img: "genshin.webp" },
+                    { name: "1090 創世結晶", price: "480", img: "genshin.webp" },
+                    { name: "2240 創世結晶", price: "950", img: "genshin.webp" },
+                    { name: "3880 創世結晶", price: "1350", img: "genshin.webp" },
+                    { name: "8080 創世結晶", price: "2350", img: "genshin.webp" },
+                    { name: "空月祝福", price: "170", img: "genshin.webp" }
+                ];
+            } else if (gameName === '崩壞：星穹鐵道') {
+                plans = [
+                    { name: "330 古老夢華", price: "170", img: "starrail.webp" },
+                    { name: "1090 古老夢華", price: "480", img: "starrail.webp" },
+                    { name: "2240 古老夢華", price: "900", img: "starrail.webp" },
+                    { name: "3880 古老夢華", price: "1350", img: "starrail.webp" },
+                    { name: "8080 古老夢華", price: "2500", img: "starrail.webp" },
+                    { name: "列車補給憑證", price: "170", img: "starrail.webp" }
+                ];
+            } else if (gameName === '絕區零') {
+                plans = [
+                    { name: "330 菲林底片", price: "170", img: "zenless.webp" },
+                    { name: "1090 菲林底片", price: "480", img: "zenless.webp" },
+                    { name: "2240 菲林底片", price: "900", img: "zenless.webp" },
+                    { name: "3880 菲林底片", price: "1350", img: "zenless.webp" },
+                    { name: "8080 菲林底片", price: "2500", img: "zenless.webp" },
+                    { name: "繩網會員", price: "170", img: "zenless.webp" }
+                ];
+            } else if (gameName === '心動小鎮') {
+                loginOptions = ['谷歌', '臉書'];
+                plans = [
+                    { name: "300+20心鑽", price: "160", img: "heart_town.webp" },
+                    { name: "680+50心鑽", price: "300", img: "heart_town.webp" },
+                    { name: "1280+90心鑽", price: "600", img: "heart_town.webp" },
+                    { name: "1980+150心鑽", price: "900", img: "heart_town.webp" },
+                    { name: "3280+270心鑽", price: "1450", img: "heart_town.webp" },
+                    { name: "6480+570心鑽", price: "2750", img: "heart_town.webp" }
+                ];
+            } else if (gameName === '極速領域') {
+                plans = [
+                    { name: "1230 鑽石", price: "500", img: "speedmobile.webp" },
+                    { name: "1845 鑽石", price: "800", img: "speedmobile.webp" },
+                    { name: "3134 鑽石", price: "1200", img: "speedmobile.webp" },
+                    { name: "6279 鑽石", price: "2300", img: "speedmobile.webp" },
+                    { name: "12558 鑽石", price: "4600", img: "speedmobile.webp" }
+                ];
+            } else if (gameName === '我要活下去') {
+                plans = [
+                    { name: "1060 鑽石", price: "300", img: "freefire.webp" },
+                    { name: "2180 鑽石", price: "600", img: "freefire.webp" },
+                    { name: "5740 鑽石", price: "1450", img: "freefire.webp" },
+                    { name: "7920 鑽石", price: "2050", img: "freefire.webp" },
+                    { name: "11670 鑽石", price: "2950", img: "freefire.webp" }
+                ];
+            } else if (gameName === '荒野亂鬥') {
+                loginOptions = ['超細胞編號'];
+                plans = [
+                    { name: "80 寶石", price: "170", img: "brawlstars.webp" },
+                    { name: "170 寶石", price: "300", img: "brawlstars.webp" },
+                    { name: "360 寶石", price: "640", img: "brawlstars.webp" },
+                    { name: "950 寶石", price: "1450", img: "brawlstars.webp" },
+                    { name: "2000 寶石", price: "2850", img: "brawlstars.webp" },
+                    { name: "高級通行證", price: "400", img: "brawlstars.webp" }
+                ];
+            } else {
+                plans = [{ name: "請聯繫客服詢問價位", price: "0", img: "" }];
+            }
+
+            currentPlansList = plans.map(p => ({ ...p, quantity: 0 }));
+            currentLoginOptions = loginOptions;
+
+            const loginSelect = document.getElementById('loginMethodSelect');
+            loginSelect.innerHTML = '';
+            loginOptions.forEach(opt => {
+                const optElem = document.createElement('option');
+                optElem.value = opt;
+                optElem.text = opt;
+                loginSelect.appendChild(optElem);
+            });
+            if (loginOptions.length > 0) {
+                const customOpt = document.createElement('option');
+                customOpt.value = 'custom';
+                customOpt.text = '其他 (自訂輸入...)';
+                loginSelect.appendChild(customOpt);
+            }
+
+            renderPlansList();
+            setIndicatorStep(2);
+            showView('viewProducts');
+        }
+
+        function renderPlansList() {
+            const container = document.getElementById('planListContainer');
+            container.innerHTML = '';
+
+            currentPlansList.forEach((plan, index) => {
+                const row = document.createElement('div');
+                row.className = 'plan-row';
+                row.onclick = function(e) {
+                    if (!e.target.classList.contains('qty-btn') && !e.target.classList.contains('qty-input')) {
+                        updateQty(index, 1);
+                    }
+                };
+                row.innerHTML = `
+                    <div class="plan-row-info">
+                        <img src="${plan.img}" class="plan-row-img" alt="${plan.name}" onerror="this.src='https://via.placeholder.com/48'">
+                        <div>
+                            <div class="plan-row-name">${plan.name}</div>
+                            <div class="plan-row-price">$${plan.price} 元</div>
+                        </div>
+                    </div>
+                    <div class="qty-control" onclick="event.stopPropagation()">
+                        <button type="button" class="qty-btn" onclick="updateQty(${index}, -1)">-</button>
+                        <input type="text" class="qty-input" id="qty-${index}" value="${plan.quantity}" readonly>
+                        <button type="button" class="qty-btn" onclick="updateQty(${index}, 1)">+</button>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+            updateTotalPrice();
+        }
+
+        function updateQty(index, change) {
+            currentPlansList[index].quantity = Math.max(0, currentPlansList[index].quantity + change);
+            const inputElem = document.getElementById(`qty-${index}`);
+            if (inputElem) {
+                inputElem.value = currentPlansList[index].quantity;
+            }
+            updateTotalPrice();
+        }
+
+        function updateTotalPrice() {
+            let total = 0;
+            currentPlansList.forEach(p => {
+                total += (parseInt(p.price) || 0) * p.quantity;
+            });
+            document.getElementById('totalPriceDisplay').innerText = '$' + total;
+            document.getElementById('accountTotalPriceDisplay').innerText = '$' + total;
+            document.getElementById('paymentTotalPriceDisplay').innerText = '$' + total;
+        }
+
+        function backToGames() {
+            setIndicatorStep(1);
+            showView('viewGames');
+        }
+
+        function goToAccountStep() {
+            const selectedItems = currentPlansList.filter(p => p.quantity > 0);
+            if (selectedItems.length === 0) {
+                alert('請至少選擇一項欲購買的商品數量！');
+                return;
+            }
+
+            document.getElementById('pageAccountTitle').innerText = currentGameName + " - 填寫儲值資料";
+
+            const serverGroup = document.getElementById('serverGroup');
+            const loginGroup = document.getElementById('loginGroup');
+            const customLoginGroup = document.getElementById('customLoginGroup');
+            const passwordGroup = document.getElementById('passwordGroup');
+            const nicknameGroup = document.getElementById('nicknameGroup');
+            const backupGroup = document.getElementById('backupGroup');
+            const accountLabelText = document.getElementById('accountLabelText');
+            const gameAccountInput = document.getElementById('gameAccount');
+            const noticeHeaderTitle = document.getElementById('noticeHeaderTitle');
+            const noticeListContent = document.getElementById('noticeListContent');
+
+            noticeHeaderTitle.innerText = '注意事項';
+            noticeListContent.innerHTML = `
+                <li>因帳密填寫錯誤導致之儲值問題，須自行負責。</li>
+                <li>填寫完資料後請關閉遊戲，若強行登入導致少東西請自負。</li>
+            `;
+
+            if (currentGameName === '第五人格' || currentGameName === '蛋仔派對' || currentGameName === '我要活下去') {
+                serverGroup.style.display = 'block';
+                loginGroup.style.display = 'none';
+                customLoginGroup.style.display = 'none';
+                passwordGroup.style.display = 'none';
+                nicknameGroup.style.display = 'block';
+                backupGroup.style.display = 'none';
+                
+                accountLabelText.innerHTML = '玩家 UID <span class="required-star">*</span>';
+                gameAccountInput.placeholder = `請輸入${currentGameName}玩家UID數字編號`;
+            } else if (currentGameName === 'Discord') {
+                serverGroup.style.display = 'none';
+                loginGroup.style.display = currentLoginOptions.length > 0 ? 'block' : 'none';
+                customLoginGroup.style.display = 'none';
+                passwordGroup.style.display = 'block';
+                nicknameGroup.style.display = 'none';
+                backupGroup.style.display = 'block';
+
+                accountLabelText.innerHTML = '帳號 (信箱/手機) <span class="required-star">*</span>';
+                gameAccountInput.placeholder = '請輸入帳號';
+            } else if (currentGameName === '荒野亂鬥') {
+                serverGroup.style.display = 'none';
+                loginGroup.style.display = 'block';
+                customLoginGroup.style.display = 'none';
+                passwordGroup.style.display = 'block';
+                nicknameGroup.style.display = 'block';
+                backupGroup.style.display = 'none';
+
+                accountLabelText.innerHTML = '綁定電子信箱 <span class="required-star">*</span>';
+                gameAccountInput.placeholder = '請輸入超細胞編號綁定信箱';
+            } else if (currentGameName === 'TikTok') {
+                serverGroup.style.display = 'none';
+                loginGroup.style.display = 'block';
+                customLoginGroup.style.display = 'none';
+                passwordGroup.style.display = 'block';
+                nicknameGroup.style.display = 'block';
+                backupGroup.style.display = 'block';
+
+                accountLabelText.innerHTML = '帳號 (電話/信箱/使用者名稱) <span class="required-star">*</span>';
+                gameAccountInput.placeholder = '請輸入登入帳號';
+            } else {
+                serverGroup.style.display = 'block';
+                loginGroup.style.display = currentLoginOptions.length > 0 ? 'block' : 'none';
+                passwordGroup.style.display = 'block';
+                nicknameGroup.style.display = 'block';
+                backupGroup.style.display = 'block';
+
+                accountLabelText.innerHTML = '遊戲帳號 <span class="required-star">*</span>';
+                gameAccountInput.placeholder = '請輸入遊戲帳號或綁定信箱';
+            }
+
+            setIndicatorStep(3);
+            showView('viewAccount');
+        }
+
+        function backToProductStep() {
+            setIndicatorStep(2);
+            showView('viewProducts');
+        }
+
+        function goToPaymentStep(event) {
+            event.preventDefault();
+            const account = document.getElementById('gameAccount').value.trim();
+
+            if (currentGameName === '第五人格' || currentGameName === '蛋仔派對' || currentGameName === '我要活下去') {
+                const server = document.getElementById('gameServer').value.trim();
+                const nickname = document.getElementById('playerNickname').value.trim();
+                if (!server || !nickname || !account) {
+                    alert('請完整填寫伺服器、玩家暱稱與玩家 UID');
+                    return false;
+                }
+            } else if (currentGameName === 'Discord' || currentGameName === 'TikTok') {
+                const password = document.getElementById('gamePassword').value.trim();
+                if (!account || !password) { alert('請填寫帳號與密碼'); return false; }
+            } else if (currentGameName === '荒野亂鬥') {
+                const nickname = document.getElementById('playerNickname').value.trim();
+                if (!account || !nickname) { alert('請填寫完整綁定信箱與玩家暱稱'); return false; }
+            } else {
+                const server = document.getElementById('gameServer').value.trim();
+                const password = document.getElementById('gamePassword').value.trim();
+                const nickname = document.getElementById('playerNickname').value.trim();
+                const loginSelectElem = document.getElementById('loginMethodSelect');
+                const loginSelect = loginSelectElem ? loginSelectElem.value : '';
+                const customLogin = document.getElementById('customLoginInput').value.trim();
+
+                if (!server || !account || !password || !nickname) {
+                    alert('請填寫完整伺服器、帳號、密碼與暱稱');
+                    return false;
+                }
+                if (loginSelect === 'custom' && !customLogin) {
+                    alert('請填寫您的自訂登入方式');
+                    return false;
+                }
+            }
+
+            const selectedItems = currentPlansList.filter(p => p.quantity > 0);
+            let summaryText = selectedItems.map(p => `${p.name} × ${p.quantity}`).join('、');
+            let totalPrice = selectedItems.reduce((sum, p) => sum + (parseInt(p.price) * p.quantity), 0);
+
+            document.getElementById('summaryPlan').innerText = summaryText;
+            document.getElementById('summaryPrice').innerText = totalPrice;
+
+            setIndicatorStep(4);
+            showView('viewPayment');
+            updatePaymentNotice();
+        }
+
+        function backToAccountStepFromPayment() {
+            setIndicatorStep(3);
+            showView('viewAccount');
+        }
+
+        function updatePaymentNotice() {
+            const method = document.querySelector('input[name="paymentMethod"]:checked').value;
+            const noticeBox = document.getElementById('paymentNotice');
+            if (method === '匯款') {
+                noticeBox.innerHTML = "繳費管道:匯款。請加入LINE聯繫客服提供。";
+            } else if (method === '無卡存款') {
+                noticeBox.innerHTML = "繳費管道:無卡存款。請加入LINE聯繫客服提供。";
+            } else if (method === '7-11櫃台條碼繳費') {
+                noticeBox.innerHTML = "繳費管道:7-11櫃台條碼繳費 (手續費+25)。請加入LINE聯繫客服提供。";
+            } else if (method === '全家櫃台條碼繳費') {
+                noticeBox.innerHTML = "繳費管道:全家櫃台條碼繳費 (手續費+25)。請加入LINE聯繫客服提供。";
+            }
+        }
+
+        async function submitFinalPayment() {
+            const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+            
+            const selectedItems = currentPlansList.filter(p => p.quantity > 0);
+            let summaryText = selectedItems.map(p => `${p.name} × ${p.quantity}`).join('、');
+            let totalPrice = selectedItems.reduce((sum, p) => sum + (parseInt(p.price) * p.quantity), 0);
+
+            // 雙重保障：確保點擊結帳時一定能抓到當前客人的 LINE ID
+            if (!userLineId && typeof liff !== 'undefined' && liff.isLoggedIn()) {
+                try {
+                    const profile = await liff.getProfile();
+                    userLineId = profile.userId;
+                } catch (err) {
+                    console.log('補抓 LINE ID 失敗:', err);
+                }
+            }
+
+            // 呼叫後端 API，傳送商品明細與客人的 lineUserId
+            fetch("/api/send-order", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    gameName: currentGameName,
+                    summaryText: summaryText,
+                    paymentMethod: paymentMethod,
+                    totalPrice: totalPrice,
+                    lineUserId: userLineId // 傳遞客人的 LINE ID
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                console.log('後端推播與流水號取得成功', data);
+                
+                const serverOrderId = data.orderId || '#10001';
+
+                let itemsDetailLines = selectedItems.map(i => `${i.name} × ${i.quantity}`).join('、');
+
+                if (currentGameName === '第五人格' || currentGameName === '蛋仔派對' || currentGameName === '我要活下去') {
+                    const server = document.getElementById('gameServer').value.trim();
+                    const nickname = document.getElementById('playerNickname').value.trim();
+                    const account = document.getElementById('gameAccount').value.trim();
+
+                    generatedOrderText = `【${serverOrderId}】\n` +
+                                         `【遊戲名稱】：${currentGameName}\n` +
+                                         `【伺服器】：${server}\n` +
+                                         `【玩家暱稱】：${nickname}\n` +
+                                         `【玩家UID】：${account}\n` +
+                                         `【儲值項目】：${itemsDetailLines}\n` +
+                                         `【繳費金額】：$${totalPrice}元\n` +
+                                         `【繳費方式】：${paymentMethod}`;
+                } else {
+                    const server = document.getElementById('gameServer').value.trim();
+                    const account = document.getElementById('gameAccount').value.trim();
+                    const password = document.getElementById('gamePassword').value.trim();
+                    const nickname = document.getElementById('playerNickname').value.trim();
+                    const loginSelectElem = document.getElementById('loginMethodSelect');
+                    const loginSelect = loginSelectElem ? loginSelectElem.value : '';
+                    const loginMethod = loginSelect === 'custom' ? document.getElementById('customLoginInput').value.trim() : (loginSelect || '預設');
+                    const backupCode = document.getElementById('backupCode').value.trim() === "" ? "無" : document.getElementById('backupCode').value.trim();
+
+                    generatedOrderText = `【${serverOrderId}】\n` +
+                                         `【遊戲名稱】：${currentGameName}\n` +
+                                         `【伺服器】：${server}\n` +
+                                         `【帳號】：${account}\n` +
+                                         `【密碼】：${password}\n` +
+                                         `【暱稱】：${nickname}\n` +
+                                         `【登入方式】：${loginMethod}\n` +
+                                         `【備用碼】：${backupCode}\n` +
+                                         `【儲值項目】：${itemsDetailLines}\n` +
+                                         `【繳費金額】：$${totalPrice}元\n` +
+                                         `【繳費方式】：${paymentMethod}`;
+                }
+
+                navigator.clipboard.writeText(generatedOrderText).catch(err => console.log('複製失敗:', err));
+
+                let orders = JSON.parse(localStorage.getItem('shrimp_orders') || '[]');
+                orders.unshift({
+                    id: serverOrderId,
+                    game: currentGameName,
+                    plan: summaryText,
+                    price: totalPrice,
+                    payment: paymentMethod,
+                    items: selectedItems,
+                    time: new Date().toLocaleString()
+                });
+                localStorage.setItem('shrimp_orders', JSON.stringify(orders));
+
+                document.getElementById('displayOrderId').innerText = serverOrderId;
+            })
+            .catch(err => {
+                console.log('推播發送失敗:', err);
+                alert('送出訂單發生錯誤，請稍後再試');
+            });
+
+            setIndicatorStep(4);
+            showView('viewSuccess');
+        }
+
+        function openLineChat() {
+            const lineUrl = `https://line.me/R/oaMessage/@189jtpve/`;
+            window.open(lineUrl, '_blank');
+        }
+
+        function openMyOrdersModal() {
+            const container = document.getElementById('ordersListContainer');
+            container.innerHTML = '';
+
+            let orders = JSON.parse(localStorage.getItem('shrimp_orders') || '[]');
+            if (orders.length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:20px;">目前尚無歷史訂單紀錄</p>';
+            } else {
+                orders.forEach(ord => {
+                    const card = document.createElement('div');
+                    card.className = 'order-item-card';
+                    
+                    let itemsHtml = '';
+                    if (ord.items && ord.items.length > 0) {
+                        itemsHtml = ord.items.map(i => `
+                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
+                                <img src="${i.img}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; border: 1px solid var(--accent-orange);" onerror="this.src='https://via.placeholder.com/24'">
+                                <span>${i.name} × ${i.quantity} ($${i.price * i.quantity}元)</span>
+                            </div>
+                        `).join('');
+                    } else {
+                        itemsHtml = `<span>${ord.plan}</span>`;
+                    }
+
+                    card.innerHTML = `
+                        <div class="order-item-header"><span>${ord.id}</span><span>總計: $${ord.price} 元</span></div>
+                        <div class="order-item-body">
+                            遊戲：${ord.game}<br>
+                            商品：<div style="padding-left: 4px;">${itemsHtml}</div>
+                            繳費：${ord.payment} ｜ 時間：${ord.time}
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+
+            document.getElementById('orderModal').style.display = 'flex';
+        }
+
+        function closeMyOrdersModal() {
+            document.getElementById('orderModal').style.display = 'none';
+        }
+
+        function toggleCustomLoginInput(val) {
+            const customGroup = document.getElementById('customLoginGroup');
+            const customInput = document.getElementById('customLoginInput');
+            if (val === 'custom') {
+                customGroup.style.display = 'block';
+                customInput.required = true;
+            } else {
+                customGroup.style.display = 'none';
+                customInput.required = false;
+            }
+        }
+
+        function setIndicatorStep(step) {
+            const s1 = document.getElementById('step1-indicator');
+            const s2 = document.getElementById('step2-indicator');
+            const s3 = document.getElementById('step3-indicator');
+            const s4 = document.getElementById('step4-indicator');
+
+            s1.className = 'step-item completed';
+            s2.className = 'step-item';
+            s3.className = 'step-item';
+            s4.className = 'step-item';
+
+            if (step === 2) {
+                s2.className = 'step-item active';
+            } else if (step === 3) {
+                s2.className = 'step-item completed';
+                s3.className = 'step-item active';
+            } else if (step === 4) {
+                s2.className = 'step-item completed';
+                s3.className = 'step-item completed';
+                s4.className = 'step-item active completed';
+            }
+        }
+
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const term = e.target.value.toLowerCase();
+            const cards = document.querySelectorAll('.game-card-icon');
+            cards.forEach(card => {
+                const title = card.querySelector('.game-title').innerText.toLowerCase();
+                card.style.display = title.includes(term) ? 'flex' : 'none';
+            });
+        });
+    </script>
+</body>
+</html>
