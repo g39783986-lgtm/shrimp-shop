@@ -962,6 +962,15 @@
                 }
             }
 
+            // 安全防護：如果還是沒有 userLineId，提醒使用者登入
+            if (!userLineId) {
+                alert('尚未取得您的 LINE 會員身分，請重新整理或允許登入授權！');
+                if (typeof liff !== 'undefined') {
+                    liff.login();
+                }
+                return;
+            }
+
             // 呼叫後端 API，把資料與客人的 lineUserId 一起傳過去
             fetch("/api/send-order", {
                 method: "POST",

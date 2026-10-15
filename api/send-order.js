@@ -232,6 +232,7 @@ export default async function handler(req, res) {
 
     if (recipients.length === 0) {
       console.log("警告: 找不到 lineUserId，無法發送 LINE 訊息");
+      return res.status(400).json({ error: "找不到 lineUserId" });
     }
 
     for (const toId of recipients) {
