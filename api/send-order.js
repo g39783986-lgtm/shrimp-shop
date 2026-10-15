@@ -31,7 +31,6 @@ export default async function handler(req, res) {
   const orderId = `#${orderIdNum}`;
   const { gameName, summaryText, paymentMethod, totalPrice, lineUserId } = req.body;
   
-  // ✅ 正確：自動讀取 Vercel 的環境變數
   const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 
   const flexMessage = {
@@ -231,8 +230,12 @@ export default async function handler(req, res) {
       recipients.push(lineUserId);
     }
 
-    await Promise.all(recipients.map(toId => 
-      fetch("https://api.line.me/v2/bot/message/push", {
+    if (recipients.length === 0) {
+      console.log("警告: 找不到 lineUserId，無法發送 LINE 訊息");
+    }
+
+    for (const toId of recipients) {
+      const lineRes = await fetch("https://api.line.me/v2/bot/message/push", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -242,11 +245,19 @@ export default async function handler(req, res) {
           to: toId,
           messages: [flexMessage]
         })
-      })
-    ));
+      });
+
+      // 檢查 LINE API 回應是否成功
+      if (!lineRes.ok) {
+        const errorText = await lineRes.text();
+        console.error("LINE API 拒絕發送錯誤:", errorText);
+        return res.status(500).json({ error: `LINE API 失敗: ${errorText}` });
+      }
+    }
 
     return res.status(200).json({ success: true, orderId: orderId });
   } catch (err) {
+    console.error("後端執行發生例外錯誤:", err.message);
     return res.status(500).json({ error: err.message });
   }
 }
