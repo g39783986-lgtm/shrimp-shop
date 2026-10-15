@@ -149,7 +149,6 @@
         .close-btn:hover { color: var(--text-main); }
         .modal-content h2 { color: var(--accent-orange); font-size: 1.15rem; font-weight: 700; }
 
-        /* 右下角 LINE 官方客服圖示樣式 */
         .floating-line-btn { position: fixed; bottom: 20px; right: 20px; width: 56px; height: 56px; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 16px rgba(6, 199, 85, 0.35); z-index: 99; transition: transform 0.2s ease; display: flex; align-items: center; justify-content: center; background: #ffffff; }
         .floating-line-btn img { width: 100%; height: 100%; object-fit: cover; }
         .floating-line-btn:hover { transform: scale(1.1); }
@@ -319,7 +318,7 @@
             </div>
         </div>
 
-        <!-- 畫面二：商品（價位）選擇獨立頁面 -->
+        <!-- 畫面二：商品選擇 -->
         <div id="viewProducts" class="page-section">
             <div class="page-header">
                 <button type="button" class="back-store-btn" onclick="backToGames()">‹ 返回遊戲列表</button>
@@ -329,7 +328,6 @@
             
             <div class="plan-list-container" id="planListContainer"></div>
 
-            <!-- 底部結帳列：總金額 + 返回鍵 + 下一步鍵 -->
             <div class="checkout-bar">
                 <div class="total-price-text">總計：<span id="totalPriceDisplay">$0</span> 元</div>
                 <div class="action-btns-group">
@@ -339,7 +337,7 @@
             </div>
         </div>
 
-        <!-- 畫面三：填寫儲值資料獨立頁面 -->
+        <!-- 畫面三：填寫儲值資料 -->
         <div id="viewAccount" class="page-section">
             <div class="page-header">
                 <button type="button" class="back-store-btn" onclick="backToProductStep()">‹ 返回選擇商品</button>
@@ -389,7 +387,6 @@
                     <input type="text" id="backupCode" placeholder="若有開啟雙重驗證請提供 3 組">
                 </div>
 
-                <!-- 填寫資料底部的總金額與導覽按鈕列 -->
                 <div class="checkout-bar" style="margin-top: 24px;">
                     <div class="total-price-text">總計：<span id="accountTotalPriceDisplay">$0</span> 元</div>
                     <div class="action-btns-group">
@@ -400,7 +397,7 @@
             </form>
         </div>
 
-        <!-- 畫面四：付款與成功結帳獨立頁面 -->
+        <!-- 畫面四：付款與成功結帳 -->
         <div id="viewPayment" class="page-section">
             <div class="page-header">
                 <button type="button" class="back-store-btn" onclick="backToAccountStepFromPayment()">‹ 返回修改資料</button>
@@ -436,7 +433,6 @@
                 繳費管道:匯款。請加入LINE聯繫客服提供。
             </div>
 
-            <!-- 付款頁面底部的總金額與導覽按鈕列 -->
             <div class="checkout-bar" style="margin-top: 24px;">
                 <div class="total-price-text">總計：<span id="paymentTotalPriceDisplay">$0</span> 元</div>
                 <div class="action-btns-group">
@@ -453,7 +449,6 @@
             <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5; margin-bottom: 12px;">系統已自動發送精美訂單卡片至您的 LINE！</p>
             <div class="order-id-tag" id="displayOrderId">#10000</div>
             
-            <!-- 成功畫面底部的按鈕列 -->
             <div class="checkout-bar" style="margin-top: 24px;">
                 <div class="action-btns-group" style="width: 100%; display: flex; gap: 10px;">
                     <button type="button" class="btn-back-page" style="flex: 1;" onclick="backToGames()">返回首頁</button>
@@ -463,7 +458,7 @@
         </div>
     </div>
 
-    <!-- 彈跳視窗：我的歷史訂單 -->
+    <!-- 歷史訂單 Modal -->
     <div class="modal" id="orderModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -475,7 +470,6 @@
         </div>
     </div>
 
-    <!-- 右下角 LINE 官方客服圖示按鈕 -->
     <a href="https://line.me/R/oaMessage/@189jtpve/" target="_blank" class="floating-line-btn" title="官方客服">
         <img src="200x200bb-75.webp" alt="官方客服LINE" onerror="this.src='https://via.placeholder.com/56?text=LINE'">
     </a>
@@ -489,7 +483,7 @@
         let currentPlansList = [];
         let currentLoginOptions = [];
         let generatedOrderText = "";
-        let userLineId = ""; // 儲存當前客人的 LINE ID
+        let userLineId = ""; // 自動抓取客人的 LINE ID
 
         window.onload = function() {
             if (typeof liff !== 'undefined') {
@@ -501,7 +495,8 @@
                         liff.getProfile().then(profile => {
                             document.getElementById('userName').innerText = profile.displayName;
                             document.getElementById('userAvatar').src = profile.pictureUrl;
-                            userLineId = profile.userId; // 抓取客人的 LINE ID
+                            userLineId = profile.userId; // 成功取得客人的 LINE ID
+                            console.log('成功取得客人 LINE ID:', userLineId);
                         }).catch(err => console.log('取得 LINE 個人檔案失敗', err));
                     } else {
                         liff.login();
@@ -831,14 +826,6 @@
             const backupGroup = document.getElementById('backupGroup');
             const accountLabelText = document.getElementById('accountLabelText');
             const gameAccountInput = document.getElementById('gameAccount');
-            const noticeHeaderTitle = document.getElementById('noticeHeaderTitle');
-            const noticeListContent = document.getElementById('noticeListContent');
-
-            noticeHeaderTitle.innerText = '注意事項';
-            noticeListContent.innerHTML = `
-                <li>因帳密填寫錯誤導致之儲值問題，須自行負責。</li>
-                <li>填寫完資料後請關閉遊戲，若強行登入導致少東西請自負。</li>
-            `;
 
             if (currentGameName === '第五人格' || currentGameName === '蛋仔派對' || currentGameName === '我要活下去') {
                 serverGroup.style.display = 'block';
@@ -955,15 +942,7 @@
         function updatePaymentNotice() {
             const method = document.querySelector('input[name="paymentMethod"]:checked').value;
             const noticeBox = document.getElementById('paymentNotice');
-            if (method === '匯款') {
-                noticeBox.innerHTML = "繳費管道:匯款。請加入LINE聯繫客服提供。";
-            } else if (method === '無卡存款') {
-                noticeBox.innerHTML = "繳費管道:無卡存款。請加入LINE聯繫客服提供。";
-            } else if (method === '7-11櫃台條碼繳費') {
-                noticeBox.innerHTML = "繳費管道:7-11櫃台條碼繳費 (手續費+25)。請加入LINE聯繫客服提供。";
-            } else if (method === '全家櫃台條碼繳費') {
-                noticeBox.innerHTML = "繳費管道:全家櫃台條碼繳費 (手續費+25)。請加入LINE聯繫客服提供。";
-            }
+            noticeBox.innerHTML = `繳費管道:${method}。請加入LINE聯繫客服提供。`;
         }
 
         async function submitFinalPayment() {
@@ -973,7 +952,7 @@
             let summaryText = selectedItems.map(p => `${p.name} × ${p.quantity}`).join('、');
             let totalPrice = selectedItems.reduce((sum, p) => sum + (parseInt(p.price) * p.quantity), 0);
 
-            // 雙重保障：確保點擊結帳時一定能抓到當前客人的 LINE ID
+            // 確保送出時抓到當前客人的 LINE ID
             if (!userLineId && typeof liff !== 'undefined' && liff.isLoggedIn()) {
                 try {
                     const profile = await liff.getProfile();
@@ -983,7 +962,7 @@
                 }
             }
 
-            // 呼叫後端 API，傳送商品明細與客人的 lineUserId
+            // 呼叫後端 API，把資料與客人的 lineUserId 一起傳過去
             fetch("/api/send-order", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -992,72 +971,17 @@
                     summaryText: summaryText,
                     paymentMethod: paymentMethod,
                     totalPrice: totalPrice,
-                    lineUserId: userLineId // 傳遞客人的 LINE ID
+                    lineUserId: userLineId // 傳送客人的 LINE ID
                 })
             })
             .then(res => res.json())
             .then(data => {
-                console.log('後端推播與流水號取得成功', data);
-                
+                console.log('後端推播與流水號回應:', data);
                 const serverOrderId = data.orderId || '#10001';
-
-                let itemsDetailLines = selectedItems.map(i => `${i.name} × ${i.quantity}`).join('、');
-
-                if (currentGameName === '第五人格' || currentGameName === '蛋仔派對' || currentGameName === '我要活下去') {
-                    const server = document.getElementById('gameServer').value.trim();
-                    const nickname = document.getElementById('playerNickname').value.trim();
-                    const account = document.getElementById('gameAccount').value.trim();
-
-                    generatedOrderText = `【${serverOrderId}】\n` +
-                                         `【遊戲名稱】：${currentGameName}\n` +
-                                         `【伺服器】：${server}\n` +
-                                         `【玩家暱稱】：${nickname}\n` +
-                                         `【玩家UID】：${account}\n` +
-                                         `【儲值項目】：${itemsDetailLines}\n` +
-                                         `【繳費金額】：$${totalPrice}元\n` +
-                                         `【繳費方式】：${paymentMethod}`;
-                } else {
-                    const server = document.getElementById('gameServer').value.trim();
-                    const account = document.getElementById('gameAccount').value.trim();
-                    const password = document.getElementById('gamePassword').value.trim();
-                    const nickname = document.getElementById('playerNickname').value.trim();
-                    const loginSelectElem = document.getElementById('loginMethodSelect');
-                    const loginSelect = loginSelectElem ? loginSelectElem.value : '';
-                    const loginMethod = loginSelect === 'custom' ? document.getElementById('customLoginInput').value.trim() : (loginSelect || '預設');
-                    const backupCode = document.getElementById('backupCode').value.trim() === "" ? "無" : document.getElementById('backupCode').value.trim();
-
-                    generatedOrderText = `【${serverOrderId}】\n` +
-                                         `【遊戲名稱】：${currentGameName}\n` +
-                                         `【伺服器】：${server}\n` +
-                                         `【帳號】：${account}\n` +
-                                         `【密碼】：${password}\n` +
-                                         `【暱稱】：${nickname}\n` +
-                                         `【登入方式】：${loginMethod}\n` +
-                                         `【備用碼】：${backupCode}\n` +
-                                         `【儲值項目】：${itemsDetailLines}\n` +
-                                         `【繳費金額】：$${totalPrice}元\n` +
-                                         `【繳費方式】：${paymentMethod}`;
-                }
-
-                navigator.clipboard.writeText(generatedOrderText).catch(err => console.log('複製失敗:', err));
-
-                let orders = JSON.parse(localStorage.getItem('shrimp_orders') || '[]');
-                orders.unshift({
-                    id: serverOrderId,
-                    game: currentGameName,
-                    plan: summaryText,
-                    price: totalPrice,
-                    payment: paymentMethod,
-                    items: selectedItems,
-                    time: new Date().toLocaleString()
-                });
-                localStorage.setItem('shrimp_orders', JSON.stringify(orders));
-
                 document.getElementById('displayOrderId').innerText = serverOrderId;
             })
             .catch(err => {
                 console.log('推播發送失敗:', err);
-                alert('送出訂單發生錯誤，請稍後再試');
             });
 
             setIndicatorStep(4);
@@ -1065,14 +989,12 @@
         }
 
         function openLineChat() {
-            const lineUrl = `https://line.me/R/oaMessage/@189jtpve/`;
-            window.open(lineUrl, '_blank');
+            window.open('https://line.me/R/oaMessage/@189jtpve/', '_blank');
         }
 
         function openMyOrdersModal() {
             const container = document.getElementById('ordersListContainer');
             container.innerHTML = '';
-
             let orders = JSON.parse(localStorage.getItem('shrimp_orders') || '[]');
             if (orders.length === 0) {
                 container.innerHTML = '<p style="text-align:center; color:var(--text-muted); padding:20px;">目前尚無歷史訂單紀錄</p>';
@@ -1080,31 +1002,10 @@
                 orders.forEach(ord => {
                     const card = document.createElement('div');
                     card.className = 'order-item-card';
-                    
-                    let itemsHtml = '';
-                    if (ord.items && ord.items.length > 0) {
-                        itemsHtml = ord.items.map(i => `
-                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
-                                <img src="${i.img}" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; border: 1px solid var(--accent-orange);" onerror="this.src='https://via.placeholder.com/24'">
-                                <span>${i.name} × ${i.quantity} ($${i.price * i.quantity}元)</span>
-                            </div>
-                        `).join('');
-                    } else {
-                        itemsHtml = `<span>${ord.plan}</span>`;
-                    }
-
-                    card.innerHTML = `
-                        <div class="order-item-header"><span>${ord.id}</span><span>總計: $${ord.price} 元</span></div>
-                        <div class="order-item-body">
-                            遊戲：${ord.game}<br>
-                            商品：<div style="padding-left: 4px;">${itemsHtml}</div>
-                            繳費：${ord.payment} ｜ 時間：${ord.time}
-                        </div>
-                    `;
+                    card.innerHTML = `<div class="order-item-header"><span>${ord.id}</span><span>$${ord.price}</span></div>`;
                     container.appendChild(card);
                 });
             }
-
             document.getElementById('orderModal').style.display = 'flex';
         }
 

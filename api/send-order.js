@@ -6,7 +6,6 @@ export default async function handler(req, res) {
   let orderIdNum = 10000;
 
   try {
-    // 透過 Upstash 雲端資料庫將編號自動 +1 (絕對不會重複、不會歸零)
     const kvRes = await fetch(`${process.env.UPSTASH_REDIS_REST_URL}/incr/order_seq`, {
       headers: {
         Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}`,
@@ -16,8 +15,6 @@ export default async function handler(req, res) {
     
     if (kvData.result) {
       orderIdNum = kvData.result;
-      
-      // 如果是全新資料庫（數字小於 10000），強制初始化從 10000 開始
       if (orderIdNum < 10000) {
         await fetch(`${process.env.UPSTASH_REDIS_REST_URL}/set/order_seq/10000`, {
           headers: {
@@ -32,9 +29,10 @@ export default async function handler(req, res) {
   }
 
   const orderId = `#${orderIdNum}`;
-
   const { gameName, summaryText, paymentMethod, totalPrice, lineUserId } = req.body;
-  const channelAccessToken = "xywTd6UKsCMAcLpQPxtnZ0eQVaydPrO3lNO+muCX869CyzJKBh7Kze+IqtUE1OBBZdb4kFv0HpLdAMuE81Zu8KXITIZqO3bjNZrDsNH1ITMYc+YfnG2CSv20ehFWPf6fXiaEHmIu0pB6pjK50w5H9QdB04t89/1O/w1cDnyilFU=";
+  
+  // ✅ 正確：自動讀取 Vercel 的環境變數
+  const channelAccessToken = process.env.LINE_CHANNEL_ACCESS_TOKEN;
 
   const flexMessage = {
     "type": "flex",
@@ -228,7 +226,6 @@ export default async function handler(req, res) {
   };
 
   try {
-    // 只發送給下單的客人，絕對不傳送給老闆
     const recipients = [];
     if (lineUserId) {
       recipients.push(lineUserId);
